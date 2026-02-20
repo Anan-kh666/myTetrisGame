@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -13,7 +15,9 @@ class TetrisApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: Colors.transparent,
+      ),
       home: const GameBoard(),
     );
   }
@@ -22,13 +26,13 @@ class TetrisApp extends StatelessWidget {
 enum Tetromino { L, J, I, O, S, Z, T }
 
 const Map<Tetromino, Color> tetrominoColors = {
-  Tetromino.L: Colors.orange,
-  Tetromino.J: Colors.blue,
-  Tetromino.I: Colors.cyan,
-  Tetromino.O: Colors.yellow,
-  Tetromino.S: Colors.green,
-  Tetromino.Z: Colors.red,
-  Tetromino.T: Colors.purple,
+  Tetromino.L: Color(0xFFFFA500),
+  Tetromino.J: Color(0xFF0055FF),
+  Tetromino.I: Color(0xFF00FFFF),
+  Tetromino.O: Color(0xFFFFE600),
+  Tetromino.S: Color(0xFF00FF00),
+  Tetromino.Z: Color(0xFFFF0000),
+  Tetromino.T: Color(0xFFAA00FF),
 };
 
 const Map<Tetromino, List<List<int>>> tetrominoRotations = {
@@ -192,26 +196,40 @@ class _GameBoardState extends State<GameBoard> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('Game Over', style: TextStyle(color: Colors.white)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Colors.cyan, width: 2),
+        ),
+        title: const Text(
+          'GAME OVER',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.cyan, fontWeight: FontWeight.bold, letterSpacing: 2),
+        ),
         content: Text(
-          'Score: $score\nLevel: $level\nHigh Score: $highScore',
-          style: const TextStyle(color: Colors.white70),
+          'SCORE: $score\nLEVEL: $level\nBEST: $highScore',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white, height: 1.5, fontSize: 18),
         ),
         actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                board.clear();
-                score = 0;
-                level = 1;
-                holdPieceType = null;
-                nextPieceType = _getRandomTetromino();
-                spawnNewPiece();
-                startGame();
-              });
-            },
-            child: const Text('Play Again'),
+          Center(
+            child: TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {
+                  board.clear();
+                  score = 0;
+                  level = 1;
+                  holdPieceType = null;
+                  nextPieceType = _getRandomTetromino();
+                  spawnNewPiece();
+                  startGame();
+                });
+              },
+              child: const Text(
+                'PLAY AGAIN',
+                style: TextStyle(color: Colors.orange, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
         ],
       ),
@@ -342,79 +360,95 @@ class _GameBoardState extends State<GameBoard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F1A),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  MiniBox(title: 'HOLD', tetromino: holdPieceType),
-                  Column(
-                    children: [
-                      _HudLabel(label: 'SCORE', value: '$score'),
-                      const SizedBox(height: 6),
-                      _HudLabel(label: 'LEVEL', value: '$level'),
-                      const SizedBox(height: 6),
-                      _HudLabel(label: 'BEST', value: '$highScore'),
-                    ],
-                  ),
-                  MiniBox(title: 'NEXT', tetromino: nextPieceType),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: AspectRatio(
-                  aspectRatio: rowLength / colLength,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white24, width: 2),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E)],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MiniBox(title: 'HOLD', tetromino: holdPieceType),
+                    Column(
+                      children: [
+                        _HudLabel(label: 'SCORE', value: '$score', color: Colors.cyanAccent),
+                        const SizedBox(height: 8),
+                        _HudLabel(label: 'LEVEL', value: '$level', color: Colors.orangeAccent),
+                        const SizedBox(height: 8),
+                        _HudLabel(label: 'BEST', value: '$highScore', color: Colors.pinkAccent),
+                      ],
                     ),
-                    child: GridView.builder(
-                      itemCount: rowLength * colLength,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: rowLength,
+                    MiniBox(title: 'NEXT', tetromino: nextPieceType),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Center(
+                  child: AspectRatio(
+                    aspectRatio: rowLength / colLength,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        border: Border.all(color: Colors.cyan.withOpacity(0.5), width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.cyan.withOpacity(0.2),
+                            blurRadius: 20,
+                            spreadRadius: 2,
+                          ),
+                        ],
                       ),
-                      itemBuilder: (context, index) {
-                        if (currentPiece.position.contains(index)) {
-                          return Pixel(color: currentPiece.color);
-                        } else if (board.containsKey(index)) {
-                          return Pixel(color: board[index]!);
-                        } else if (ghostPosition.contains(index)) {
-                          return Pixel(color: currentPiece.color.withOpacity(0.25));
-                        } else {
-                          return const Pixel(color: Color(0xFF1A1A2E));
-                        }
-                      },
+                      child: GridView.builder(
+                        itemCount: rowLength * colLength,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: rowLength,
+                        ),
+                        itemBuilder: (context, index) {
+                          if (currentPiece.position.contains(index)) {
+                            return Pixel(color: currentPiece.color);
+                          } else if (board.containsKey(index)) {
+                            return Pixel(color: board[index]!);
+                          } else if (ghostPosition.contains(index)) {
+                            return Pixel(color: currentPiece.color, isGhost: true);
+                          } else {
+                            return const Pixel(color: Colors.transparent, isEmpty: true);
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _ControlButton(
-                    icon: Icons.swap_horiz,
-                    size: 36,
-                    color: canHold ? Colors.orange : Colors.grey,
-                    onPressed: holdPiece,
-                  ),
-                  _ControlButton(icon: Icons.arrow_left, size: 44, onPressed: moveLeft),
-                  _ControlButton(icon: Icons.rotate_right, size: 40, onPressed: rotatePiece),
-                  _ControlButton(icon: Icons.vertical_align_bottom, size: 40, onPressed: hardDrop),
-                  _ControlButton(icon: Icons.arrow_right, size: 44, onPressed: moveRight),
-                ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 20, 10, 30),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _ControlButton(
+                      icon: Icons.swap_horiz,
+                      size: 36,
+                      color: canHold ? Colors.orangeAccent : Colors.white24,
+                      onPressed: holdPiece,
+                    ),
+                    _ControlButton(icon: Icons.arrow_left, size: 44, onPressed: moveLeft),
+                    _ControlButton(icon: Icons.rotate_right, size: 40, onPressed: rotatePiece),
+                    _ControlButton(icon: Icons.vertical_align_bottom, size: 40, onPressed: hardDrop),
+                    _ControlButton(icon: Icons.arrow_right, size: 44, onPressed: moveRight),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -424,15 +458,24 @@ class _GameBoardState extends State<GameBoard> {
 class _HudLabel extends StatelessWidget {
   final String label;
   final String value;
+  final Color color;
 
-  const _HudLabel({required this.label, required this.value});
+  const _HudLabel({required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: Colors.white54, fontSize: 13, letterSpacing: 1.5)),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 2)),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            shadows: [Shadow(color: color.withOpacity(0.8), blurRadius: 10)],
+          ),
+        ),
       ],
     );
   }
@@ -448,14 +491,27 @@ class _ControlButton extends StatelessWidget {
     required this.icon,
     required this.size,
     required this.onPressed,
-    this.color = Colors.white70,
+    this.color = Colors.white,
   });
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onPressed,
-      icon: Icon(icon, size: size, color: color),
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withOpacity(0.1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            offset: const Offset(0, 4),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon, size: size, color: color),
+      ),
     );
   }
 }
@@ -484,26 +540,32 @@ class MiniBox extends StatelessWidget {
 
     return Column(
       children: [
-        Text(title, style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
-        const SizedBox(height: 4),
+        Text(
+          title,
+          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, letterSpacing: 2),
+        ),
+        const SizedBox(height: 8),
         Container(
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A2E),
+            color: Colors.black.withOpacity(0.4),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white12),
+            border: Border.all(color: Colors.white24, width: 2),
           ),
-          child: GridView.builder(
-            itemCount: 16,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
-            itemBuilder: (context, index) {
-              if (normalizedPositions.contains(index)) {
-                return Pixel(color: tetrominoColors[tetromino]!);
-              }
-              return const SizedBox.shrink();
-            },
+          child: Padding(
+            padding: const EdgeInsets.all(4.0),
+            child: GridView.builder(
+              itemCount: 16,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
+              itemBuilder: (context, index) {
+                if (normalizedPositions.contains(index)) {
+                  return Pixel(color: tetrominoColors[tetromino]!);
+                }
+                return const SizedBox.shrink();
+              },
+            ),
           ),
         ),
       ],
@@ -515,17 +577,66 @@ enum Direction { left, right, down }
 
 class Pixel extends StatelessWidget {
   final Color color;
-  const Pixel({super.key, required this.color});
+  final bool isEmpty;
+  final bool isGhost;
+
+  const Pixel({
+    super.key,
+    required this.color,
+    this.isEmpty = false,
+    this.isGhost = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          border: Border.all(color: Colors.white.withOpacity(0.05), width: 0.5),
+        ),
+      );
+    }
+
+    if (isGhost) {
+      return Container(
+        margin: const EdgeInsets.all(1),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: color.withOpacity(0.5), width: 2),
+        ),
+      );
+    }
+
     return Container(
+      margin: const EdgeInsets.all(1),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.black26, width: 0.5),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withOpacity(0.5),
+            color,
+            color.withOpacity(0.8),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.4),
+            blurRadius: 4,
+            offset: const Offset(1, 1),
+          ),
+        ],
+        border: Border(
+          top: BorderSide(color: Colors.white.withOpacity(0.6), width: 1.5),
+          left: BorderSide(color: Colors.white.withOpacity(0.6), width: 1.5),
+          right: BorderSide(color: Colors.black.withOpacity(0.4), width: 1.5),
+          bottom: BorderSide(color: Colors.black.withOpacity(0.4), width: 1.5),
+        ),
       ),
-      margin: const EdgeInsets.all(1),
     );
   }
 }
