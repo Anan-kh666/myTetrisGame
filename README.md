@@ -1,16 +1,3 @@
-# tetris
-
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+this is a tetris game remake by me.
+you can run it on your android device by downloading the apk-release file build/app/outputs/apk/release/app-release.apk
+or you can download the files to your device and install flutter and build the app on your device and run it on a IOS or android simulator

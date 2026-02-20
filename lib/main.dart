@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 void main() {
   runApp(const TetrisApp());
@@ -82,6 +83,7 @@ class _GameBoardState extends State<GameBoard> {
   Tetromino? holdPieceType;
   bool canHold = true;
   List<int> ghostPosition = [];
+  bool isPaused = false;
 
   @override
   void initState() {
@@ -95,6 +97,11 @@ class _GameBoardState extends State<GameBoard> {
   void dispose() {
     gameLoop?.cancel();
     super.dispose();
+  }
+
+  void playSound(String fileName) async {
+    final player = AudioPlayer();
+    await player.play(AssetSource('sounds/$fileName'));
   }
 
   Tetromino _getRandomTetromino() {
@@ -118,9 +125,11 @@ class _GameBoardState extends State<GameBoard> {
 
   void startGame() {
     gameLoop?.cancel();
-    final int speed = max(100, 450 - (level * 50));
+    final int speed = max(80, 500 - (level * 40));
 
     gameLoop = Timer.periodic(Duration(milliseconds: speed), (timer) {
+      if (isPaused) return;
+
       setState(() {
         if (!checkCollision(Direction.down)) {
           movePieceDown();
@@ -128,6 +137,12 @@ class _GameBoardState extends State<GameBoard> {
           lockPiece();
         }
       });
+    });
+  }
+
+  void togglePause() {
+    setState(() {
+      isPaused = !isPaused;
     });
   }
 
@@ -161,6 +176,8 @@ class _GameBoardState extends State<GameBoard> {
 
     if (fullRows.isEmpty) return;
 
+    playSound('clear.mp3');
+
     for (final row in fullRows) {
       for (int col = 0; col < rowLength; col++) {
         board.remove(row * rowLength + col);
@@ -181,7 +198,7 @@ class _GameBoardState extends State<GameBoard> {
 
     if (score > highScore) highScore = score;
 
-    final int newLevel = (score ~/ 500) + 1;
+    final int newLevel = (score ~/ 600) + 1;
     if (newLevel > level) {
       level = newLevel;
       startGame();
@@ -190,6 +207,7 @@ class _GameBoardState extends State<GameBoard> {
 
   void gameOver() {
     gameLoop?.cancel();
+    playSound('gameover.mp3');
     if (score > highScore) highScore = score;
     showDialog(
       context: context,
@@ -219,6 +237,7 @@ class _GameBoardState extends State<GameBoard> {
                   board.clear();
                   score = 0;
                   level = 1;
+                  isPaused = false;
                   holdPieceType = null;
                   nextPieceType = _getRandomTetromino();
                   spawnNewPiece();
@@ -237,8 +256,8 @@ class _GameBoardState extends State<GameBoard> {
   }
 
   void holdPiece() {
-    if (!canHold) return;
-
+    if (!canHold || isPaused) return;
+    playSound('move.mp3');
     setState(() {
       if (holdPieceType == null) {
         holdPieceType = currentPiece.type;
@@ -259,7 +278,6 @@ class _GameBoardState extends State<GameBoard> {
 
   void updateGhostPosition() {
     List<int> simulated = List.from(currentPiece.position);
-
     while (true) {
       bool collision = false;
       for (final pos in simulated) {
@@ -272,7 +290,6 @@ class _GameBoardState extends State<GameBoard> {
       if (collision) break;
       simulated = simulated.map((p) => p + rowLength).toList();
     }
-
     ghostPosition = simulated;
   }
 
@@ -281,7 +298,9 @@ class _GameBoardState extends State<GameBoard> {
   }
 
   void moveLeft() {
+    if (isPaused) return;
     if (!checkCollision(Direction.left)) {
+      playSound('move.mp3');
       setState(() {
         currentPiece.position = currentPiece.position.map((p) => p - 1).toList();
         updateGhostPosition();
@@ -290,7 +309,9 @@ class _GameBoardState extends State<GameBoard> {
   }
 
   void moveRight() {
+    if (isPaused) return;
     if (!checkCollision(Direction.right)) {
+      playSound('move.mp3');
       setState(() {
         currentPiece.position = currentPiece.position.map((p) => p + 1).toList();
         updateGhostPosition();
@@ -299,6 +320,7 @@ class _GameBoardState extends State<GameBoard> {
   }
 
   void rotatePiece() {
+    if (isPaused) return;
     final rotations = tetrominoRotations[currentPiece.type]!;
     final int nextIndex = (currentPiece.rotationIndex + 1) % rotations.length;
     final template = rotations[nextIndex];
@@ -324,6 +346,7 @@ class _GameBoardState extends State<GameBoard> {
     });
 
     if (valid) {
+      playSound('rotate.mp3');
       setState(() {
         currentPiece.position = newPosition;
         currentPiece.rotationIndex = nextIndex;
@@ -333,6 +356,8 @@ class _GameBoardState extends State<GameBoard> {
   }
 
   void hardDrop() {
+    if (isPaused) return;
+    playSound('drop.mp3');
     setState(() {
       while (!checkCollision(Direction.down)) {
         movePieceDown();
@@ -385,6 +410,22 @@ class _GameBoardState extends State<GameBoard> {
                         _HudLabel(label: 'LEVEL', value: '$level', color: Colors.orangeAccent),
                         const SizedBox(height: 8),
                         _HudLabel(label: 'BEST', value: '$highScore', color: Colors.pinkAccent),
+                        const SizedBox(height: 10),
+                        GestureDetector(
+                          onTap: togglePause,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isPaused ? Colors.orange.withOpacity(0.3) : Colors.white12,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isPaused ? Icons.play_arrow : Icons.pause,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     MiniBox(title: 'NEXT', tetromino: nextPieceType),
@@ -395,36 +436,56 @@ class _GameBoardState extends State<GameBoard> {
                 child: Center(
                   child: AspectRatio(
                     aspectRatio: rowLength / colLength,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        border: Border.all(color: Colors.cyan.withOpacity(0.5), width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.cyan.withOpacity(0.2),
-                            blurRadius: 20,
-                            spreadRadius: 2,
+                    child: Stack(
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            border: Border.all(color: Colors.cyan.withOpacity(0.5), width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.cyan.withOpacity(0.2),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: GridView.builder(
-                        itemCount: rowLength * colLength,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: rowLength,
+                          child: GridView.builder(
+                            itemCount: rowLength * colLength,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: rowLength,
+                            ),
+                            itemBuilder: (context, index) {
+                              if (currentPiece.position.contains(index)) {
+                                return Pixel(color: currentPiece.color);
+                              } else if (board.containsKey(index)) {
+                                return Pixel(color: board[index]!);
+                              } else if (ghostPosition.contains(index)) {
+                                return Pixel(color: currentPiece.color, isGhost: true);
+                              } else {
+                                return const Pixel(color: Colors.transparent, isEmpty: true);
+                              }
+                            },
+                          ),
                         ),
-                        itemBuilder: (context, index) {
-                          if (currentPiece.position.contains(index)) {
-                            return Pixel(color: currentPiece.color);
-                          } else if (board.containsKey(index)) {
-                            return Pixel(color: board[index]!);
-                          } else if (ghostPosition.contains(index)) {
-                            return Pixel(color: currentPiece.color, isGhost: true);
-                          } else {
-                            return const Pixel(color: Colors.transparent, isEmpty: true);
-                          }
-                        },
-                      ),
+                        if (isPaused)
+                          Container(
+                            color: Colors.black.withOpacity(0.7),
+                            child: const Center(
+                              child: Text(
+                                'PAUSED',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 6,
+                                  shadows: [Shadow(color: Colors.orange, blurRadius: 15)],
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
@@ -580,12 +641,7 @@ class Pixel extends StatelessWidget {
   final bool isEmpty;
   final bool isGhost;
 
-  const Pixel({
-    super.key,
-    required this.color,
-    this.isEmpty = false,
-    this.isGhost = false,
-  });
+  const Pixel({super.key, required this.color, this.isEmpty = false, this.isGhost = false});
 
   @override
   Widget build(BuildContext context) {
@@ -617,18 +673,10 @@ class Pixel extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            color.withOpacity(0.5),
-            color,
-            color.withOpacity(0.8),
-          ],
+          colors: [color.withOpacity(0.5), color, color.withOpacity(0.8)],
         ),
         boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.4),
-            blurRadius: 4,
-            offset: const Offset(1, 1),
-          ),
+          BoxShadow(color: color.withOpacity(0.4), blurRadius: 4, offset: const Offset(1, 1)),
         ],
         border: Border(
           top: BorderSide(color: Colors.white.withOpacity(0.6), width: 1.5),
